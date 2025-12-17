@@ -36,7 +36,7 @@ def creer_ruche(plateau):
     On veut crée les 4 ruches dans les coins de la map 
     en insérant des dictionnaires dans le plateau (list)
 
-    Les settings donné au ruche sont : type, id, nectar et nombre d'abeille
+    Les settings donné aux ruches sont : type, id, nectar et nombre d'abeille
     """
     ruche0 = {
         "type": "ruche",
@@ -63,63 +63,69 @@ def creer_ruche(plateau):
         "abeilles": []
     }
     # Placer les ruches dans les coins
-    plateau[0][0] = ruche0
-    plateau[0][NCASES-1] = ruche1
-    plateau[NCASES-1][0] = ruche2
-    plateau[NCASES-1][NCASES-1] = ruche3
+    plateau[0][0].append(ruche0)
+    plateau[0][NCASES-1].append(ruche1)
+    plateau[NCASES-1][0].append(ruche2)
+    plateau[NCASES-1][NCASES-1].append(ruche3)
 
     ruches = [ruche0, ruche1, ruche2, ruche3]
     return ruches
 
-    
+
 
 def creer_fleurs(NFLEURS=4):
     """
-    Crée des fleurs avec leur nectar et position (initialement None)
+    Crée des fleurs avec leur nectar (initialisé à 0 pour l'instant qu'on va changer dans la fonction placer_fleurs) et position (initialement None)
     Le nectar est attribué entre 1 et MAX_NECTAR.
     """
     fleurs = []
     for i in range(NFLEURS):
-        nectar = random.randint(1, MAX_NECTAR)
         fleurs.append({
             "id": f"fleur{i}",
-            "nectar": nectar,
+            "nectar": 0,
             "position": None
         })
     return fleurs
 
 
+
 def placer_fleurs(plateau, fleurs):
     """
-    Place les fleurs symétriquement sur le plateau en respectant les zones protégées (5x5) aux coins
+    Place les fleurs symétriquement sur le plateau en respectant les zones protégées (4x4) aux coins
     et l'unicité des fleurs.
+    Le nectar est attribué entre 1 et MAX_NECTAR.
     """
     N = len(plateau)
-    zone_protegee = 4  # On laisse un espace de 4x4 autour des coins pour les ruches
+    zone_protegee = 4
 
-    # créer la liste des cases autorisées
-    cases_autorisees = [
-        (x, y)
-        for x in range(zone_protegee, N-zone_protegee)  # Exclure les bords et zones protégées
-        for y in range(zone_protegee, N-zone_protegee)
-    ]
+    for fleur in fleurs:
+        position_valide = False
 
-    # Mélanger les cases autorisées pour distribuer aléatoirement les fleurs
-    random.shuffle(cases_autorisees)
+        while position_valide == False:
+            x = random.randint(0, N//2)
+            y = random.randint(0, N//2)
 
-    # Placer les fleurs de manière symétrique
-    for i, fleur in enumerate(fleurs):
-        # Choisir une position dans les cases autorisées
-        x, y = cases_autorisees[i]
-
-        # Placer la fleur à sa position et ses symétriques
-        fleur["position"] = (x, y)
-        plateau[x][y].append(fleur)
-        
-        # Placer les symétriques
-        plateau[NCASES-1-x][y].append(fleur)
-        plateau[x][NCASES-1-y].append(fleur)
-        plateau[NCASES-1-x][NCASES-1-y].append(fleur)
+            # coin haut-gauche
+            if x < zone_protegee and y < zone_protegee:
+                continue
+            else:
+                position_valide = True
+                nectar = random.randint(1, MAX_NECTAR)
+                
+                # Mettre à jour la fleur de base
+                fleur["nectar"] = nectar
+                fleur["position"] = (x, y)
+                
+                # Créer 3 autres fleurs distinctes pour les positions symétriques restantes
+                fleur2 = {"id": fleur["id"], "nectar": nectar, "position": (N-1-x, y)}
+                fleur3 = {"id": fleur["id"], "nectar": nectar, "position": (x, N-1-y)}
+                fleur4 = {"id": fleur["id"], "nectar": nectar, "position": (N-1-x, N-1-y)}
+                
+                # Placer les 4 fleurs
+                plateau[x][y].append(fleur)
+                plateau[N-1-x][y].append(fleur2)
+                plateau[x][N-1-y].append(fleur3)
+                plateau[N-1-x][N-1-y].append(fleur4)
 
 
 def creer_abeille(type_abeille, position, camp):
@@ -138,6 +144,9 @@ def creer_abeille(type_abeille, position, camp):
 
 
 def placer_abeille(plateau, abeille):
+    """
+    Placer les abeilles crée sur le plateau
+    """
     x, y = abeille["position"]
     plateau[x][y].append(abeille)
 
@@ -200,8 +209,4 @@ def startgame():
     
     print("\nAbeille placée :", abeille1)
 
-
-
-
 startgame() #Lancement du jeu
-
