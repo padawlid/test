@@ -1,3 +1,4 @@
+
 #modèle du jeu
 import random
 
@@ -81,6 +82,7 @@ def creer_fleurs(NFLEURS=4):
     fleurs = []
     for i in range(NFLEURS):
         fleurs.append({
+            "type": "fleur",
             "id": f"fleur{i}",
             "nectar": 0,
             "position": None
@@ -117,9 +119,9 @@ def placer_fleurs(plateau, fleurs):
                 fleur["position"] = (x, y)
                 
                 # Créer 3 autres fleurs distinctes pour les positions symétriques restantes
-                fleur2 = {"id": fleur["id"], "nectar": nectar, "position": (N-1-x, y)}
-                fleur3 = {"id": fleur["id"], "nectar": nectar, "position": (x, N-1-y)}
-                fleur4 = {"id": fleur["id"], "nectar": nectar, "position": (N-1-x, N-1-y)}
+                fleur2 = {"type": "fleur", "id": fleur["id"], "nectar": nectar, "position": (N-1-x, y)}
+                fleur3 = {"type": "fleur", "id": fleur["id"], "nectar": nectar, "position": (x, N-1-y)}
+                fleur4 = {"type": "fleur", "id": fleur["id"], "nectar": nectar, "position": (N-1-x, N-1-y)}
                 
                 # Placer les 4 fleurs
                 plateau[x][y].append(fleur)
@@ -171,42 +173,53 @@ def deplacer_abeille(plateau, abeille, nouvelle_position):
     abeille["position"] = (x_new, y_new)
     plateau[x_new][y_new].append(abeille)
 
+def tour_abeille(plateau, abeille):
+    """
+    Joue le tour d'une abeille
+    """
+    if abeille["etat"] != "OK":
+        return
 
-def startgame():
+    # pour l'instant : déplacement aléatoire (TEMPORAIRE)
+    x, y = abeille["position"]
+    directions = [(-1,0),(1,0),(0,-1),(0,1)]
+    dx, dy = random.choice(directions)
+
+    x_new = max(0, min(NCASES-1, x + dx))
+    y_new = max(0, min(NCASES-1, y + dy))
+
+    deplacer_abeille(plateau, abeille, (x_new, y_new))
+
+def tour_ruche(plateau, ruche):
     """
-    Permet de lancer le jeu dans le bon ordre afin de l'exécuter
+    Joue le tour complet d'une ruche
     """
-    # 1. Créer le plateau
+    for abeille in ruche["abeilles"]:
+        tour_abeille(plateau, abeille)
+
+
+def tour_jeu(plateau, ruches, tour):
+    print(f"--- TOUR {tour} ---")
+    for ruche in ruches:
+        tour_ruche(plateau, ruche)
+
+def lancer_partie():
     plateau = creer_plateau()
-    
-    # 2. Créer et placer les ruches
     ruches = creer_ruche(plateau)
-    
-    # 3. Créer et placer les fleurs
     fleurs = creer_fleurs(NFLEURS)
     placer_fleurs(plateau, fleurs)
-    
-    # 4. Faire pondre une abeille pour la ruche 0
-    position_depart = (0, 1)  # à côté de la ruche0
-    abeille1 = pondre(ruches[0], "ouvriere", position_depart)
-    
-    # 5. Placer l'abeille sur le plateau
-    if abeille1:
-        placer_abeille(plateau, abeille1)
-    
-    # 6. Afficher l'état initial pour vérifier
-    print("Plateau :")
-    for ligne in plateau:
-        print(ligne)
-    
-    print("\nRuches :")
-    for r in ruches:
-        print(r)
-    
-    print("\nFleurs :")
-    for f in fleurs:
-        print(f)
-    
-    print("\nAbeille placée :", abeille1)
 
-startgame() #Lancement du jeu
+    # pondre 1 abeille par ruche
+    for ruche in ruches:
+        abeille = pondre(ruche, "ouvriere", (0,0))
+        if abeille:
+            placer_abeille(plateau, abeille)
+
+    for tour in range(1, TIME_OUT + 1):
+        tour_jeu(plateau, ruches, tour)
+    
+
+
+
+
+
