@@ -182,8 +182,22 @@ def distance_valide(pos1, pos2, distance_max=1): #(à voir pour debug de l'écla
     """
     x1, y1 = pos1 #position 1(x,y)
     x2, y2 = pos2 #position 2(x,y), si la différence est + de 1 c pas bon.
-    return abs(x2 - x1) + abs(y2 - y1) <= distance_max #return True or False et regarde si c'est bien 1 case de bouger
-
+    return max(abs(x2 - x1), abs(y2 - y1)) <= distance_max  #Distance de Chebyshev #return True or False et regarde si c'est bien 1 case de bouger
+def distance_valide(pos1, pos2, distance_max=1, diagonale_autorisee=True):
+    """  
+    Vérifie si la distance entre deux positions est valide
+    - si diagonale_autorisee = True : 8 directions (distance de Chebyshev)
+    - si diagonale_autorisee = False : 4 directions (distance de Manhattan)
+    """
+    x1, y1 = pos1 #position 1(x,y)
+    x2, y2 = pos2 #position 2(x,y), si la différence est + de 1 c pas bon.
+    
+    if diagonale_autorisee:
+        # Distance de Chebyshev (8 directions)
+        return max(abs(x2 - x1), abs(y2 - y1)) <= distance_max #return True or False
+    else:
+        # Distance de Manhattan (4 directions)
+        return abs(x2 - x1) + abs(y2 - y1) <= distance_max
 def dans_zone_ruche(position, joueur):
     """  
     Vérifie si la position est dans la ruche du joueur
@@ -198,26 +212,6 @@ def dans_zone_ruche(position, joueur):
     elif joueur == 3:
         return x >= 12 and y >= 12
     
-def tenter_ponte(plateau, ruche, type_abeille, position):
-    """ 
-    Tente de pondre une abeille dans une ruche sur le plateau
-    Renvoie (abeille, None) si succès, (None, message d'erreur) sinon
-    """
-    #Vérifier si on a assez de nectar
-    if ruche["nectar"] < COUT_PONTE:
-        return None, f"Pas assez de nectar ! ({ruche["nectar"]}/{COUT_PONTE})"
-    x,y = position
-    #vérifier si la case est libre
-    if case_libre_abeille(plateau, x,y) == False:
-        return None, "Case occupée !"
-    #sinon, créer l'abeille et la placer
-    ruche["nectar"] -= COUT_PONTE
-    abeille = creer_abeille(type_abeille, position, ruche["id"])
-    ruche["abeilles"].append(abeille)
-    placer_abeille(plateau, abeille)
-    
-    return abeille, None
-
 def tenter_deplacement(plateau, abeille, nouvelle_position):
     """  
     Tente de déplacer l'abeille
@@ -225,16 +219,23 @@ def tenter_deplacement(plateau, abeille, nouvelle_position):
     """
     x_old, y_old = abeille["position"]
     x_new, y_new = nouvelle_position
-    if distance_valide((x_old, y_old), (x_new, y_new)) == False:
+    
+    # L'éclaireuse peut aller en diagonale, les autres non
+    diagonale_ok = (abeille["role"] == "eclaireuse")
+    
+    if not distance_valide((x_old, y_old), (x_new, y_new), distance_max=1, diagonale_autorisee=diagonale_ok):
         return False, "Oula tu vas où là ? C'est trop loin !"
-    if case_libre_abeille(plateau, x_new, y_new) == False:
+    
+    if not case_libre_abeille(plateau, x_new, y_new):
         return False, "Mhh.. y'a déjà quelqu'un sur la case"
+    
     plateau[x_old][y_old].remove(abeille)
     abeille["position"] = (x_new, y_new)
     abeille["a_bouge"] = True
     plateau[x_new][y_new].append(abeille)
-
+    
     return True, None
+
 #====== BUTINAGE ======
 def fleurs_accessibles(plateau, x,y):
     """  
@@ -312,6 +313,25 @@ def tenter_butinage(plateau, abeille, ruche):
     
     return True, pris
 
+def tenter_ponte(plateau, ruche, type_abeille, position):
+    """ 
+    Tente de pondre une abeille dans une ruche sur le plateau
+    Renvoie (abeille, None) si succès, (None, message d'erreur) sinon
+    """
+    #Vérifier si on a assez de nectar
+    if ruche["nectar"] < COUT_PONTE:
+        return None, f"Pas assez de nectar ! ({ruche["nectar"]}/{COUT_PONTE})"
+    x,y = position
+    #vérifier si la case est libre
+    if case_libre_abeille(plateau, x,y) == False:
+        return None, "Case occupée !"
+    #sinon, créer l'abeille et la placer
+    ruche["nectar"] -= COUT_PONTE
+    abeille = creer_abeille(type_abeille, position, ruche["id"])
+    ruche["abeilles"].append(abeille)
+    placer_abeille(plateau, abeille)
+    
+    return abeille, None
 #=== ESCARMOUCHE ===
 
 def trouver_opposantes(plateau, abeille):
